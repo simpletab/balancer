@@ -1,16 +1,18 @@
 // Copyright 2022 <mzh.scnu@qq.com>. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
-package balancer
+
+package algorithm
 
 import (
-	"github.com/stretchr/testify/assert"
-	"reflect"
+	"sync/atomic"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-// TestNewIPHash_Add .
-func TestNewIPHash_Add(t *testing.T) {
+// TestRoundRobin_Add .
+func TestRoundRobin_Add(t *testing.T) {
 	cases := []struct {
 		name   string
 		lb     Balancer
@@ -19,38 +21,41 @@ func TestNewIPHash_Add(t *testing.T) {
 	}{
 		{
 			"test-1",
-			NewIPHash([]string{"http://127.0.0.1:1011",
+			NewRoundRobin([]string{"http://127.0.0.1:1011",
 				"http://127.0.0.1:1012", "http://127.0.0.1:1013"}),
-			"http://127.0.0.1:1012",
-			&IPHash{
+			"http://127.0.0.1:1013",
+			&RoundRobin{
 				BaseBalancer: BaseBalancer{
 					hosts: []string{"http://127.0.0.1:1011",
 						"http://127.0.0.1:1012", "http://127.0.0.1:1013"},
 				},
+				i: atomic.Uint64{},
 			},
 		},
 		{
 			"test-2",
-			NewIPHash([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012"}),
-			"http://127.0.0.1:1013",
-			&IPHash{
+			NewRoundRobin([]string{"http://127.0.0.1:1011",
+				"http://127.0.0.1:1012"}),
+			"http://127.0.0.1:1012",
+			&RoundRobin{
 				BaseBalancer: BaseBalancer{
 					hosts: []string{"http://127.0.0.1:1011",
-						"http://127.0.0.1:1012", "http://127.0.0.1:1013"},
+						"http://127.0.0.1:1012"},
 				},
+				i: atomic.Uint64{},
 			},
 		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			c.lb.Add(c.args)
-			assert.Equal(t, true, reflect.DeepEqual(c.expect, c.lb))
+			assert.Equal(t, c.expect, c.lb)
 		})
 	}
 }
 
-// TestIPHash_Remove .
-func TestIPHash_Remove(t *testing.T) {
+// TestRoundRobin_Remove .
+func TestRoundRobin_Remove(t *testing.T) {
 	cases := []struct {
 		name   string
 		lb     Balancer
@@ -59,24 +64,22 @@ func TestIPHash_Remove(t *testing.T) {
 	}{
 		{
 			"test-1",
-			NewIPHash([]string{"http://127.0.0.1:1011",
-				"http://127.0.0.1:1012", "http://127.0.0.1:1013"}),
-			"http://127.0.0.1:1012",
-			&IPHash{
+			NewRoundRobin([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012"}),
+			"http://127.0.0.1:1013",
+			&RoundRobin{
 				BaseBalancer: BaseBalancer{
 					hosts: []string{"http://127.0.0.1:1011",
-						"http://127.0.0.1:1013"},
+						"http://127.0.0.1:1012"},
 				},
 			},
 		},
 		{
 			"test-2",
-			NewIPHash([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012"}),
-			"http://127.0.0.1:1013",
-			&IPHash{
+			NewRoundRobin([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012"}),
+			"http://127.0.0.1:1012",
+			&RoundRobin{
 				BaseBalancer: BaseBalancer{
-					hosts: []string{"http://127.0.0.1:1011",
-						"http://127.0.0.1:1012"},
+					hosts: []string{"http://127.0.0.1:1011"},
 				},
 			},
 		},
@@ -84,13 +87,13 @@ func TestIPHash_Remove(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			c.lb.Remove(c.args)
-			assert.Equal(t, true, reflect.DeepEqual(c.expect, c.lb))
+			assert.Equal(t, c.expect, c.lb)
 		})
 	}
 }
 
-// TestIPHash_Balance .
-func TestIPHash_Balance(t *testing.T) {
+// TestRoundRobin_Balance .
+func TestRoundRobin_Balance(t *testing.T) {
 	type expect struct {
 		reply string
 		err   error
@@ -98,12 +101,13 @@ func TestIPHash_Balance(t *testing.T) {
 	cases := []struct {
 		name   string
 		lb     Balancer
-		key    string
+		args   string
 		expect expect
 	}{
-		{"test-1",
-			NewIPHash([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012", "http://127.0.0.1:1013"}),
-			"192.168.1.1",
+		{
+			"test-1",
+			NewRoundRobin([]string{"http://127.0.0.1:1011"}),
+			"",
 			expect{
 				"http://127.0.0.1:1011",
 				nil,
@@ -111,8 +115,8 @@ func TestIPHash_Balance(t *testing.T) {
 		},
 		{
 			"test-2",
-			NewIPHash([]string{}),
-			"192.168.1.1",
+			NewRoundRobin([]string{}),
+			"",
 			expect{
 				"",
 				NoHostError,
@@ -121,9 +125,9 @@ func TestIPHash_Balance(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			value, err := c.lb.Balance(c.key)
-			assert.Equal(t, true, reflect.DeepEqual(c.expect.reply, value))
-			assert.Equal(t, true, reflect.DeepEqual(c.expect.err, err))
+			reply, err := c.lb.Balance(c.args)
+			assert.Equal(t, c.expect.reply, reply)
+			assert.Equal(t, c.expect.err, err)
 		})
 	}
 }

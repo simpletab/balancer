@@ -17,12 +17,12 @@ spec:
     spec:
       containers:
         - name: balancer
-          image: balancer:v1.0.0
-          imagePullPolicy: IfNotPresent
-          volumeMounts:
-            - name: config
-              mountPath: /opt
-              readOnly: true
+          image: charlie1380/balancer:v1.0.5
+          imagePullPolicy: Always
+#          volumeMounts:
+#            - name: config
+#              mountPath: /opt
+#              readOnly: true
       volumes:
         - name: config
           configMap:

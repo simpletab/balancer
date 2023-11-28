@@ -1,5 +1,5 @@
 ## version
-SERVER_VERSION = v1.0.0
+SERVER_VERSION = v1.0.5
 ## command
 GO           = go
 GO_VENDOR    = go mod
@@ -15,4 +15,4 @@ build:
 
 .PHONY: docker.build
 docker.build: 
-	docker build --no-cache --rm --tag balancer:$(SERVER_VERSION) -f ./build/Dockerfile .
+	docker build --no-cache --rm --tag charlie1380/balancer:$(SERVER_VERSION) -f ./build/Dockerfile .

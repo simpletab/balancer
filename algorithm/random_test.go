@@ -2,17 +2,19 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package balancer
+package algorithm
 
 import (
-	"sync/atomic"
+	"math/rand"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-// TestRoundRobin_Add .
-func TestRoundRobin_Add(t *testing.T) {
+// TestRandom_Add .
+func TestRandom_Add(t *testing.T) {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	cases := []struct {
 		name   string
 		lb     Balancer
@@ -21,28 +23,38 @@ func TestRoundRobin_Add(t *testing.T) {
 	}{
 		{
 			"test-1",
-			NewRoundRobin([]string{"http://127.0.0.1:1011",
-				"http://127.0.0.1:1012", "http://127.0.0.1:1013"}),
-			"http://127.0.0.1:1013",
-			&RoundRobin{
+			&Random{
 				BaseBalancer: BaseBalancer{
 					hosts: []string{"http://127.0.0.1:1011",
 						"http://127.0.0.1:1012", "http://127.0.0.1:1013"},
 				},
-				i: atomic.Uint64{},
+				rnd: rnd,
+			},
+			"http://127.0.0.1:1013",
+			&Random{
+				BaseBalancer: BaseBalancer{
+					hosts: []string{"http://127.0.0.1:1011",
+						"http://127.0.0.1:1012", "http://127.0.0.1:1013"},
+				},
+				rnd: rnd,
 			},
 		},
 		{
 			"test-2",
-			NewRoundRobin([]string{"http://127.0.0.1:1011",
-				"http://127.0.0.1:1012"}),
-			"http://127.0.0.1:1012",
-			&RoundRobin{
+			&Random{
 				BaseBalancer: BaseBalancer{
 					hosts: []string{"http://127.0.0.1:1011",
 						"http://127.0.0.1:1012"},
 				},
-				i: atomic.Uint64{},
+				rnd: rnd,
+			},
+			"http://127.0.0.1:1012",
+			&Random{
+				BaseBalancer: BaseBalancer{
+					hosts: []string{"http://127.0.0.1:1011",
+						"http://127.0.0.1:1012"},
+				},
+				rnd: rnd,
 			},
 		},
 	}
@@ -54,8 +66,9 @@ func TestRoundRobin_Add(t *testing.T) {
 	}
 }
 
-// TestRoundRobin_Remove .
-func TestRoundRobin_Remove(t *testing.T) {
+// TestRandom_Remove .
+func TestRandom_Remove(t *testing.T) {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	cases := []struct {
 		name   string
 		lb     Balancer
@@ -64,23 +77,38 @@ func TestRoundRobin_Remove(t *testing.T) {
 	}{
 		{
 			"test-1",
-			NewRoundRobin([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012"}),
+			&Random{
+				BaseBalancer: BaseBalancer{
+					hosts: []string{"http://127.0.0.1:1011",
+						"http://127.0.0.1:1012", "http://127.0.0.1:1013"},
+				},
+				rnd: rnd,
+			},
 			"http://127.0.0.1:1013",
-			&RoundRobin{
+			&Random{
 				BaseBalancer: BaseBalancer{
 					hosts: []string{"http://127.0.0.1:1011",
 						"http://127.0.0.1:1012"},
 				},
+				rnd: rnd,
 			},
 		},
 		{
 			"test-2",
-			NewRoundRobin([]string{"http://127.0.0.1:1011", "http://127.0.0.1:1012"}),
-			"http://127.0.0.1:1012",
-			&RoundRobin{
+			&Random{
 				BaseBalancer: BaseBalancer{
-					hosts: []string{"http://127.0.0.1:1011"},
+					hosts: []string{"http://127.0.0.1:1011",
+						"http://127.0.0.1:1012"},
 				},
+				rnd: rnd,
+			},
+			"http://127.0.0.1:1013",
+			&Random{
+				BaseBalancer: BaseBalancer{
+					hosts: []string{"http://127.0.0.1:1011",
+						"http://127.0.0.1:1012"},
+				},
+				rnd: rnd,
 			},
 		},
 	}
@@ -92,8 +120,8 @@ func TestRoundRobin_Remove(t *testing.T) {
 	}
 }
 
-// TestRoundRobin_Balance .
-func TestRoundRobin_Balance(t *testing.T) {
+// TestRandom_Balance .
+func TestRandom_Balance(t *testing.T) {
 	type expect struct {
 		reply string
 		err   error
@@ -106,7 +134,7 @@ func TestRoundRobin_Balance(t *testing.T) {
 	}{
 		{
 			"test-1",
-			NewRoundRobin([]string{"http://127.0.0.1:1011"}),
+			NewRandom([]string{"http://127.0.0.1:1011"}),
 			"",
 			expect{
 				"http://127.0.0.1:1011",
@@ -115,7 +143,7 @@ func TestRoundRobin_Balance(t *testing.T) {
 		},
 		{
 			"test-2",
-			NewRoundRobin([]string{}),
+			NewRandom([]string{}),
 			"",
 			expect{
 				"",

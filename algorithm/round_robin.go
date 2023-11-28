@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package balancer
+package algorithm
 
 import "sync/atomic"
 
-//RoundRobin will select the server in turn from the server to proxy
+// RoundRobin will select the server in turn from the server to proxy
 type RoundRobin struct {
 	BaseBalancer
 	i atomic.Uint64

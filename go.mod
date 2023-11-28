@@ -1,6 +1,6 @@
 module github.com/zehuamama/balancer
 
-go 1.21
+go 1.20
 
 require (
 	github.com/gorilla/mux v1.8.0
